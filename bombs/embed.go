@@ -2,9 +2,9 @@ package bombs
 
 import "embed"
 
-//go:embebd 1G.gzip
-//go:embebd 10G.gzip
-//go:embebd 1T.gzip
+//go:embed 1G.gzip
+//go:embed 10G.gzip
+//go:embed 1T.gzip
 var Bombs embed.FS
 
 var BombFileNameList = []string{`1G`, `10G`, `1T`}
