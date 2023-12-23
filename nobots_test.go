@@ -1,9 +1,9 @@
 package nobots
 
 import (
-	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"regexp"
 	"strconv"
 	"testing"
@@ -49,16 +49,21 @@ func TestSetup(t *testing.T) {
 		{`nobots "nobots.go" { regex "Googlebot" }`, false},
 		// Bomb exists and regexp valid
 		{`nobots "nobots.go" { regexp "^Googlebot$" }`, false},
+		// Bomb exists and regexp valid
+		{`nobots "nobots.go" { regexp "Googlebot\.abc" }`, false},
 		// Bomb exists and regexp not valid
 		{`nobots "nobots.go" { regexp "(?P<name>re" }`, true},
 	}
 
 	for i, test := range tests {
-		_, err := parseUA(caddy.NewTestController("http", test.input))
+		botUA, err := parseUA(caddy.NewTestController("http", test.input))
 		if test.shouldErr && err == nil {
 			t.Errorf("Test %v: Expected error but found nil", i)
 		} else if !test.shouldErr && err != nil {
 			t.Errorf("Test %v: Expected no error but found error: %v", i, err)
+		}
+		if botUA != nil && len(botUA.re) > 0 {
+			t.Logf(`rule=%q, match=%+v`, botUA.re[0].String(), botUA.re[0].FindAllString(`Googlebot.abc`, -1))
 		}
 	}
 }
@@ -112,9 +117,9 @@ func TestNobotsWithPublic(t *testing.T) {
 		},
 	}
 
-	file, err := ioutil.ReadFile(filename)
+	file, err := os.ReadFile(filename)
 	if err != nil {
-
+		t.Errorf("Expected no errors, but got: %v", err)
 	}
 
 	fileSize := strconv.Itoa(len(file))
@@ -211,17 +216,18 @@ func TestNobotsWithPublic(t *testing.T) {
 			}
 
 			if len(rw.UA.uas) > 0 || len(rw.UA.re) > 0 {
-				if rec.HeaderMap.Get("Content-Type") != test.header.type_ {
+				hdr := rec.Result().Header
+				if hdr.Get("Content-Type") != test.header.type_ {
 					t.Errorf("Test %d-%d (%s): Expected Content-Type '%s' but found '%s'",
-						i, j, funcName, test.header.type_, rec.HeaderMap.Get("Content-Type"))
+						i, j, funcName, test.header.type_, hdr.Get("Content-Type"))
 				}
-				if rec.HeaderMap.Get("Content-Encoding") != test.header.encoding {
+				if hdr.Get("Content-Encoding") != test.header.encoding {
 					t.Errorf("Test %d-%d (%s): Expected Content-Encoding '%s' but found '%s'",
-						i, j, funcName, test.header.encoding, rec.HeaderMap.Get("Content-Encoding"))
+						i, j, funcName, test.header.encoding, hdr.Get("Content-Encoding"))
 				}
-				if rec.HeaderMap.Get("Content-Length") != test.header.length {
+				if hdr.Get("Content-Length") != test.header.length {
 					t.Errorf("Test %d-%d (%s): Expected Content-Length '%s' but found '%s'",
-						i, j, funcName, test.header.length, rec.HeaderMap.Get("Content-Length"))
+						i, j, funcName, test.header.length, hdr.Get("Content-Length"))
 				}
 			}
 		}
@@ -232,7 +238,6 @@ func TestNobotsWithPublic(t *testing.T) {
 func TestNobots(t *testing.T) {
 	funcName := "TestNobots"
 	myHandler := func(w http.ResponseWriter, r *http.Request) (int, error) {
-
 		return http.StatusOK, nil
 	}
 
@@ -266,9 +271,9 @@ func TestNobots(t *testing.T) {
 		},
 	}
 
-	file, err := ioutil.ReadFile(filename)
+	file, err := os.ReadFile(filename)
 	if err != nil {
-
+		t.Errorf("Expected no errors, but got: %v", err)
 	}
 
 	fileSize := strconv.Itoa(len(file))
@@ -356,17 +361,18 @@ func TestNobots(t *testing.T) {
 			}
 
 			if len(rw.UA.uas) > 0 || len(rw.UA.re) > 0 {
-				if rec.HeaderMap.Get("Content-Type") != test.header.type_ {
+				hdr := rec.Result().Header
+				if hdr.Get("Content-Type") != test.header.type_ {
 					t.Errorf("Test %d-%d (%s): Expected Content-Type '%s' but found '%s'",
-						i, j, funcName, test.header.type_, rec.HeaderMap.Get("Content-Type"))
+						i, j, funcName, test.header.type_, hdr.Get("Content-Type"))
 				}
-				if rec.HeaderMap.Get("Content-Encoding") != test.header.encoding {
+				if hdr.Get("Content-Encoding") != test.header.encoding {
 					t.Errorf("Test %d-%d (%s): Expected Content-Encoding '%s' but found '%s'",
-						i, j, funcName, test.header.encoding, rec.HeaderMap.Get("Content-Encoding"))
+						i, j, funcName, test.header.encoding, hdr.Get("Content-Encoding"))
 				}
-				if rec.HeaderMap.Get("Content-Length") != test.header.length {
+				if hdr.Get("Content-Length") != test.header.length {
 					t.Errorf("Test %d-%d (%s): Expected Content-Length '%s' but found '%s'",
-						i, j, funcName, test.header.length, rec.HeaderMap.Get("Content-Length"))
+						i, j, funcName, test.header.length, hdr.Get("Content-Length"))
 				}
 			}
 		}

@@ -2,7 +2,6 @@ package nobots
 
 import (
 	"fmt"
-	"io/ioutil"
 	"net/http"
 	"os"
 	"regexp"
@@ -148,7 +147,7 @@ func serveBomb(w http.ResponseWriter, r *http.Request, bomb string) (int, error)
 	if bombs.Exists(bomb) {
 		cbytes, err = bombs.Bombs.ReadFile(bomb + `.gzip`)
 	} else {
-		cbytes, err = ioutil.ReadFile(bomb)
+		cbytes, err = os.ReadFile(bomb)
 	}
 	if err != nil {
 		return http.StatusNotFound, nil
